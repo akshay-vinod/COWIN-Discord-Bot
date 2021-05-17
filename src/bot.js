@@ -38,8 +38,6 @@ client.on("message",async(message) => {
     .substring(PREFIX.length)
     .split(/\s(.+)?/,2);
     if(CMD_NAME === "start"){
-        const state = await fetchState();
-  stateData = state.states
         stateData.map(items=>{
             message.channel.send(items.state_name)
         })
