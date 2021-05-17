@@ -11,7 +11,7 @@ const fetchState = async () => {
   /*response = requests.get(url, (headers = headers));*/
   url = "https://cdn-api.co-vin.in/api/v2/admin/location/states";
   return fetch(url, { method: "GET", headers: headers })
-    .then((res) => {
+    .then(async (res) => {
       const resJson = res.json();
       return resJson;
     })
