@@ -1,4 +1,4 @@
-const fetch = require("node-fetch-with-proxy");
+const fetch = require("node-fetch");
 const HttpsProxyAgent = require("https-proxy-agent");
 
 headers = {
