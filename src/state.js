@@ -1,22 +1,26 @@
-const fetch = require("node-fetch");
+const fetch = require("node-fetch-with-proxy");
+const HttpsProxyAgent = require("https-proxy-agent");
+
 headers = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0",
 };
+const proxyAgent = new HttpsProxyAgent("http://14.99.187.7:80");
+
 const fetchState = async () => {
   /*fetch(`https://cdn-api.co-vin.in/api/v2/admin/location/districts/16`)
     .then((res) => console.log(res))
     .then((json) => console.log(json));*/
-
   /*response = requests.get(url, (headers = headers));*/
+
+  const test = await fetch("https://httpbin.org/ip?json");
+  const testJson = await test.json();
+  console.log(testJson)
+  
   url = "https://cdn-api.co-vin.in/api/v2/admin/location/states";
   return fetch(url, {
     method: "GET",
     headers: headers,
-    proxy: {
-      host: "13.235.248.19",
-      port: 3128,
-    },
   })
     .then(async (res) => {
       const resJson = res.json();

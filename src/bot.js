@@ -57,7 +57,7 @@ client.on("message",async(message) => {
       var districtsMessage = ""
       districtData= district.districts
       districtData.map(items=>{
-        districtsMessage+=" `"+items.district_name+"`"
+        districtsMessage+=" |`"+items.district_name+"`|"
       })
       message.channel.send(districtsMessage)
       message.channel.send("Enter your district name in format '$district districtname'")
