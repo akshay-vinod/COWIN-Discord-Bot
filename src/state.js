@@ -15,8 +15,8 @@ const fetchState = async () => {
 
   const test = await fetch("https://httpbin.org/ip?json");
   const testJson = await test.json();
-  console.log(testJson)
-  
+  console.log(testJson);
+
   url = "https://cdn-api.co-vin.in/api/v2/admin/location/states";
   return fetch(url, {
     method: "GET",
@@ -31,30 +31,27 @@ const fetchState = async () => {
 
 const fetchDistricts = async (state_id) => {
   url = `https://cdn-api.co-vin.in/api/v2/admin/location/districts/${state_id}`;
+  console.log("passed district");
   return fetch(url, {
     headers: headers,
-    proxy: {
-      host: "13.235.248.19",
-      port: 3128,
-    },
-  }).then(async (res) => {
-    const resJson = await res.json();
-    return resJson;
-  });
+  })
+    .then(async (res) => {
+      const resJson = await res.json();
+      return resJson;
+    })
+    .catch((err) => console.log(err));
 };
 
 const fetchSlots = async (district_id) => {
   url = `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=${district_id}&date=31-03-2021`;
   return fetch(url, {
     headers: headers,
-    proxy: {
-      host: "13.235.248.19",
-      port: 3128,
-    },
-  }).then(async (res) => {
-    const resJson = await res.json();
-    return resJson;
-  });
+  })
+    .then(async (res) => {
+      const resJson = await res.json();
+      return resJson;
+    })
+    .catch((err) => console.log(err));
 };
 
 module.exports = { fetchState, fetchDistricts, fetchSlots };
