@@ -21,9 +21,13 @@ var slotData = []
 }*/
 //var resultObject = search("string 1", array);
 
-client.on("ready", async() => {
+client.on("ready", () => {
+ // const state = await fetchState();
+ 
+ (async() => {
   const state = await fetchState();
   stateData = state.states
+})();
  
 });
 
@@ -53,10 +57,10 @@ client.on("message",async(message) => {
         message.channel.send(`Invalid state name.Please try again.`)
         return
       }
-      
       const district = await fetchDistricts(result.state_id);
-      var districtsMessage = ""
       districtData= district.districts
+      var districtsMessage = ""
+      
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
       })
