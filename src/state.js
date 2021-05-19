@@ -61,7 +61,7 @@ const fetchState = async () => {
   return result.data.data;
 };
 const fetchDistricts = async (state_id) => {
-  url = `https://cdn-api.co-vin.in/api/v2/admin/location/districts/${state_id}`;
+  url = `https://cowin.rabeeh.me/api/v2/admin/location/districts/${state_id}`;
   let result = await axios.get(url, {
     headers: {
       "User-Agent":
@@ -70,8 +70,8 @@ const fetchDistricts = async (state_id) => {
   });
   return result.data.data;
 };
-const fetchSlots = async (district_id) => {
-  url = `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=${district_id}&date=31-03-2021`;
+const fetchSlots = async (district_id, date) => {
+  url = `https://cowin.rabeeh.me/api/v2/appointment/sessions/public/findByDistrict?district_id=${district_id}&date=${date}`;
   let result = await axios.get(url, {
     headers: {
       "User-Agent":

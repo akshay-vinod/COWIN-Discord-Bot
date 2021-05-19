@@ -44,13 +44,13 @@ client.on("ready", () => {
 })();
 });
 
-const createUser = (tag, stateid, districtname=null) => {
+const createUser = (tag, stateid, districtid) => {
   const options = {
     new: true,
     upsert: true,
   }
   if(stateid){
-    User.findOneAndUpdate({tag: tag},{state_id: stateid, district: ""}, options, (err,user) => {
+    User.findOneAndUpdate({tag: tag},{state_id: stateid, district_id: ""}, options, (err,user) => {
       if(err || !user){
         console.log("DB error")
       }else{
@@ -58,7 +58,7 @@ const createUser = (tag, stateid, districtname=null) => {
       }
     })
   }else{
-    User.findOneAndUpdate({tag: tag},{district: districtname},options, (err,user) => {
+    User.findOneAndUpdate({tag: tag},{district_id: districtid},options, (err,user) => {
       if(err || !user){
         console.log("DB error here")
       }else{
@@ -68,17 +68,29 @@ const createUser = (tag, stateid, districtname=null) => {
   }
 }
 
-const findState = (tag) => {
-  User.findOne({tag},(err,user) => {
-    if(err || !user){
-      console.log("User doesn't exist")
-      return 0;
-    }else {
-      console.log("State id",user.state_id)
-      return user.state_id 
-    }
+const findData = (tag , state) => {
+  
+  return new Promise((resolve,reject)=>{
+    User.findOne({tag},(err,user) => {
+      if(err || !user){
+        //console.log("User doesn't exist")
+        resolve(0);
+      }else {
+        //console.log("State id",user.state_id)
+        if(state)
+          resolve(user.state_id) 
+        else{
+          console.log(user.district_id)
+          resolve(user.district_id)
+        }
+
+          
+      }
+    })
+    ,(error)=> reject(error);
   })
 }
+
 client.on("message",async(message) => {
   if(message.author.bot)
     return;
@@ -105,7 +117,7 @@ client.on("message",async(message) => {
         message.channel.send(`Invalid state name.Please try again.`)
         return
       }
-      createUser(message.author.tag,result.state_id);
+      createUser(message.author.tag,result.state_id,null);
 
       const district = await fetchDistricts(result.state_id);
       districtData= district.districts
@@ -114,35 +126,50 @@ client.on("message",async(message) => {
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
       })
-      districtsMessage+="\nEnter your district name in format '$district districtname'"
+      districtsMessage+="\nEnter your district name and date in format '$district districtname'"
       message.reply(districtsMessage)
     }
-    else if (CMD_NAME === "district"){
-      state_id = findState(message.author.tag)
-      console.log(state_id)
-      if(!state_id){
-        message.reply("Enter your state first")
-        return
+    else if (CMD_NAME === "district" || CMD_NAME === "date"){
+      if(CMD_NAME === "district"){
+          state_id = await findData(message.author.tag ,true)
+          if(!state_id){
+            message.reply("Enter your state first")
+            return
+          }
+          const district = await fetchDistricts(state_id);
+          districtData= district.districts
+          result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
+          if(!result){
+            message.reply("Invalid district name");
+            return;
+          }
+          console.log(result.district_id)
+          createUser(message.author.tag,false,result.district_id)
+          message.channel.send(`Enter your date in format '$date 23-03-2021'`);
       }
-      const district = await fetchDistricts(state_id);
-      districtData= district.districts
-      
-      createUser(message.author.tag,null,arguments)
-      result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
-        if(!result){
-          message.reply("Invalid district name");
-          return;
-        }
-        const slot = await fetchSlots(result.district_id);
-        slotMessage = ""
-        slotData = slot.sessions
-        console.log(slotData)
-        slotData.map((items)=>{
-            slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
-        })
-        message.reply(slotMessage)
-        message.reply("Enter age in format '$age your_age' to get update regarding available slot ")
-
+      else {
+          district_id = await findData(message.author.tag,false)
+          console.log(arguments)
+          if(!district_id){
+            message.reply("Enter your district first")
+            return
+          }
+          const slot = await fetchSlots(district_id,arguments);
+          slotMessage = ""
+          slotData = slot.sessions
+          console.log(slotData.length)
+          if(slotData.length){
+            slotData.map((items)=>{
+              slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
+          })
+          slotMessage += "\n Book vaccine https://selfregistration.cowin.gov.in/"
+          }
+          else{
+            slotMessage = "No slot available"
+          }
+          
+          message.reply(slotMessage + "\nEnter age in format '$age your_age' to get update regarding available slot")
+      }
     }
   }
 })
