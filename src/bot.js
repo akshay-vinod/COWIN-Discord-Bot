@@ -1,6 +1,9 @@
 require("dotenv").config();
-const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 
+const mongoose = require("mongoose");
+
+const {fetchState,fetchDistricts,fetchSlots} = require("./state")
+const User = require("./user")
 
 const { Client } = require("discord.js");
 const client = new Client();
@@ -11,6 +14,16 @@ var stateData = []
 var districtData =[]
 var slotData = []
 
+//Database connection
+mongoose.connect(process.env.DATABASE,{
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true,
+  useFindAndModify: false})
+  .then(() => console.log("DB Connected"))
+  .catch((error) => console.log(error));
+
+mongoose.connection.on('error', err => console.log(err));
 
 /*function search(nameKey, myArray){
     for (var i=0; i < myArray.length; i++) {
@@ -29,9 +42,43 @@ client.on("ready", () => {
   stateData = state.states
   //console.log(stateData)
 })();
- 
 });
 
+const createUser = (tag, stateid, districtname=null) => {
+  const options = {
+    new: true,
+    upsert: true,
+  }
+  if(stateid){
+    User.findOneAndUpdate({tag: tag},{state_id: stateid, district: ""}, options, (err,user) => {
+      if(err || !user){
+        console.log("DB error")
+      }else{
+        console.log(user)
+      }
+    })
+  }else{
+    User.findOneAndUpdate({tag: tag},{district: districtname},options, (err,user) => {
+      if(err || !user){
+        console.log("DB error here")
+      }else{
+        console.log(user)
+      }
+    })
+  }
+}
+
+const findState = (tag) => {
+  User.findOne({tag},(err,user) => {
+    if(err || !user){
+      console.log("User doesn't exist")
+      return 0;
+    }else {
+      console.log("State id",user.state_id)
+      return user.state_id 
+    }
+  })
+}
 client.on("message",async(message) => {
   if(message.author.bot)
     return;
@@ -58,6 +105,8 @@ client.on("message",async(message) => {
         message.channel.send(`Invalid state name.Please try again.`)
         return
       }
+      createUser(message.author.tag,result.state_id);
+
       const district = await fetchDistricts(result.state_id);
       districtData= district.districts
       var districtsMessage = ""
@@ -65,22 +114,34 @@ client.on("message",async(message) => {
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
       })
-      message.channel.send(districtsMessage)
-      message.channel.send("Enter your district name in format '$district districtname'")
+      districtsMessage+="\nEnter your district name in format '$district districtname'"
+      message.reply(districtsMessage)
     }
     else if (CMD_NAME === "district"){
-        result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
+      state_id = findState(message.author.tag)
+      console.log(state_id)
+      if(!state_id){
+        message.reply("Enter your state first")
+        return
+      }
+      const district = await fetchDistricts(state_id);
+      districtData= district.districts
+      
+      createUser(message.author.tag,null,arguments)
+      result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
         if(!result){
-          message.channel.send("Invalid district name");
+          message.reply("Invalid district name");
           return;
         }
         const slot = await fetchSlots(result.district_id);
         slotMessage = ""
         slotData = slot.sessions
+        console.log(slotData)
         slotData.map((items)=>{
-            slotMessage+=" `"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `";
+            slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
         })
-        message.channel.send(slotMessage)
+        message.reply(slotMessage)
+        message.reply("Enter age in format '$age your_age' to get update regarding available slot ")
 
     }
   }

@@ -52,6 +52,7 @@ const fetchSlots = async (district_id) => {
     })
     .catch((err) => console.log(err));
 };*/
+
 //axios
 const fetchState = async () => {
   url = "https://cowin.rabeeh.me/api/v2/admin/location/states";
