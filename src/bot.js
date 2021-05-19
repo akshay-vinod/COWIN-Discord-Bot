@@ -5,7 +5,8 @@ const mongoose = require("mongoose");
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
 
-const { Client } = require("discord.js");
+const { Client, DataResolver } = require("discord.js");
+const { findOneAndUpdate } = require("./user");
 const client = new Client();
 
 const PREFIX = "$";
@@ -52,7 +53,7 @@ const createUser = (tag, stateid, districtid) => {
   if(stateid){
     User.findOneAndUpdate({tag: tag},{state_id: stateid, district_id: ""}, options, (err,user) => {
       if(err || !user){
-        console.log("DB error")
+        console.log("DB error while adding state name")
       }else{
         console.log(user)
       }
@@ -60,16 +61,25 @@ const createUser = (tag, stateid, districtid) => {
   }else{
     User.findOneAndUpdate({tag: tag},{district_id: districtid},options, (err,user) => {
       if(err || !user){
-        console.log("DB error here")
+        console.log("DB error while adding district")
       }else{
         console.log(user)
       }
     })
   }
 }
-
-const findData = (tag , state) => {
-  
+const addDate = (tag, date) => {
+  formattedDate = new Date(date)
+  User.findOneAndUpdate({tag},{date},{new: true},(err,user) => {
+    if(err){
+      console.log("DB error while adding date")
+    }
+    else{
+      console.log(user)
+    }
+  })
+}
+const findData = (tag , field) => {
   return new Promise((resolve,reject)=>{
     User.findOne({tag},(err,user) => {
       if(err || !user){
@@ -77,14 +87,16 @@ const findData = (tag , state) => {
         resolve(0);
       }else {
         //console.log("State id",user.state_id)
-        if(state)
+        if(field === "state")
           resolve(user.state_id) 
-        else{
+        else if(field === "district"){
           console.log(user.district_id)
           resolve(user.district_id)
         }
-
-          
+        else{
+          console.log(user.date)
+          resolve(user.date)
+        }
       }
     })
     ,(error)=> reject(error);
@@ -126,50 +138,66 @@ client.on("message",async(message) => {
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
       })
-      districtsMessage+="\nEnter your district name and date in format '$district districtname'"
+      districtsMessage+="\nEnter your district name in format '$district districtname'"
       message.reply(districtsMessage)
     }
-    else if (CMD_NAME === "district" || CMD_NAME === "date"){
-      if(CMD_NAME === "district"){
-          state_id = await findData(message.author.tag ,true)
-          if(!state_id){
-            message.reply("Enter your state first")
-            return
-          }
-          const district = await fetchDistricts(state_id);
-          districtData= district.districts
-          result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
-          if(!result){
-            message.reply("Invalid district name");
-            return;
-          }
-          console.log(result.district_id)
-          createUser(message.author.tag,false,result.district_id)
-          message.channel.send(`Enter your date in format '$date 23-03-2021'`);
+    else if(CMD_NAME === "district"){
+      state_id = await findData(message.author.tag ,"state")
+      if(!state_id){
+        message.reply("Enter your state first")
+        return
       }
-      else {
-          district_id = await findData(message.author.tag,false)
-          console.log(arguments)
-          if(!district_id){
-            message.reply("Enter your district first")
-            return
-          }
-          const slot = await fetchSlots(district_id,arguments);
-          slotMessage = ""
-          slotData = slot.sessions
-          console.log(slotData.length)
-          if(slotData.length){
-            slotData.map((items)=>{
-              slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
-          })
-          slotMessage += "\n Book vaccine https://selfregistration.cowin.gov.in/"
-          }
-          else{
-            slotMessage = "No slot available"
-          }
-          
-          message.reply(slotMessage + "\nEnter age in format '$age your_age' to get update regarding available slot")
+      const district = await fetchDistricts(state_id);
+      districtData= district.districts
+      result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
+      if(!result){
+        message.reply("Invalid district name");
+        return;
       }
+      console.log(result.district_id)
+      createUser(message.author.tag,false,result.district_id)
+      message.reply(`Enter your date in format '$date 09-03-2021'`);
+    }
+    else if(CMD_NAME === "date") {
+      district_id = await findData(message.author.tag,"district")
+      console.log(arguments)
+      if(!district_id){
+        message.reply("Enter your district first")
+        return
+      }
+      addDate(message.author.tag,arguments)
+      message.reply("Enter age in format '$age your_age'")
+    }
+    else if(CMD_NAME === "age"){
+      district_id = await findData(message.author.tag,"district")
+      date = await findData(message.author.tag,"date")
+      if(!date){
+        message.reply("Enter your preferred date first")
+        return
+      }
+      const slot = await fetchSlots(district_id,date);
+      slotMessage = ""
+      console.log(slot.sessions)
+      slotData = slot.sessions.filter((item) => item.min_age_limit<=arguments)
+
+      if(slotData.length){
+        slotData.map((items)=>{
+          slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
+        })
+        slotMessage += "\n Book vaccine https://selfregistration.cowin.gov.in/"
+      }
+      else{
+        slotMessage = "No slot available"
+      } 
+      slotMessage += "\nEnter $notify dd-mm-yyyy to get slot availability notifications for a particular date"  
+      message.reply(slotMessage) 
+    }else if(CMD_NAME === "notify"){
+      addDate(message.author.tag,arguments);
+      User.findOneAndUpdate({tag: message.author.tag},{notify: true});
+      message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
+    }else if(CMD_NAME === "unsubscribe"){
+      User.findOneAndUpdate({tag: message.author.tag},{notify:false});
+      message.reply("Unsubscribed :thumbsup:")
     }
   }
 })

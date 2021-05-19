@@ -13,6 +13,8 @@ var userSchema = new mongoose.Schema(
     age: Number,
     state_id: Number,
     district_id: Number,
+    date: String,
+    notify: Boolean,
   },
   { timestamps: true }
 );
