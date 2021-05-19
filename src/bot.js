@@ -27,6 +27,7 @@ client.on("ready", () => {
  (async() => {
   const state = await fetchState();
   stateData = state.states
+  //console.log(stateData)
 })();
  
 });
