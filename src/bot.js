@@ -5,7 +5,6 @@ const{task} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
 const { Client, DataResolver } = require("discord.js");
-const { findOneAndUpdate } = require("./user");
 
 
 const client = new Client();
@@ -43,8 +42,9 @@ client.on("ready", () => {
   const state = await fetchState();
   stateData = state.states
   //console.log(stateData)
-})();
-task.start()
+  })();
+  //console.log(client.users.cache)
+  task.start()
 });
 
 const createUser = (tag, stateid, districtid) => {
@@ -187,6 +187,12 @@ client.on("message",async(message) => {
       console.log(slot.sessions)
       slotData = slot.sessions.filter((item) => item.min_age_limit<=arguments)
 
+      User.findOneAndUpdate({tag: message.author.tag},{age: arguments},{new: true},(err,user) => {
+        if(err){
+          console.log("Error saving age")
+        } 
+      });
+
       if(slotData.length){
         slotData.map((items)=>{
           slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
@@ -202,7 +208,13 @@ client.on("message",async(message) => {
       addDate(message.author.tag,arguments);
       //to start cron job
       //task.start();
-      User.findOneAndUpdate({tag: message.author.tag},{notify: true});
+      console.log(message.author.id)
+      User.findOneAndUpdate({tag: message.author.tag},{notify: true ,user_id:message.author.id },(err,user) => {
+        if(err){
+          console.log("Error notify")
+        }
+      });
+      check = await findData(message.author.tag,"notify")
       message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
     }else if(CMD_NAME === "unsubscribe"){
       User.findOneAndUpdate({tag: message.author.tag},{notify:false});
@@ -215,4 +227,4 @@ client.on("message",async(message) => {
 
 client.login(process.env.DISCORD_BOT_TOKEN);
 
-module.export = {Client}
+global.client = client;
