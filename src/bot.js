@@ -1,12 +1,13 @@
 require("dotenv").config();
-
 const mongoose = require("mongoose");
 
+const{task} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
-
 const { Client, DataResolver } = require("discord.js");
 const { findOneAndUpdate } = require("./user");
+
+
 const client = new Client();
 
 const PREFIX = "$";
@@ -43,6 +44,7 @@ client.on("ready", () => {
   stateData = state.states
   //console.log(stateData)
 })();
+task.start()
 });
 
 const createUser = (tag, stateid, districtid) => {
@@ -103,6 +105,9 @@ const findData = (tag , field) => {
   })
 }
 
+
+
+
 client.on("message",async(message) => {
   if(message.author.bot)
     return;
@@ -114,10 +119,12 @@ client.on("message",async(message) => {
     .trim()
     .substring(PREFIX.length)
     .split(/\s(.+)?/,2);
-    if(CMD_NAME === "start"){
-        stateData.map(items=>{
+    if(CMD_NAME === "startz"){
+       /* stateData.map(items=>{
             message.channel.send(items.state_name)
-        })
+        })*/
+        console.log(client.users)
+        message.author.send("Your message here.")
       
       message.channel.send("Enter your state name in format '$state statename'")
       
@@ -193,13 +200,19 @@ client.on("message",async(message) => {
       message.reply(slotMessage) 
     }else if(CMD_NAME === "notify"){
       addDate(message.author.tag,arguments);
+      //to start cron job
+      //task.start();
       User.findOneAndUpdate({tag: message.author.tag},{notify: true});
       message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
     }else if(CMD_NAME === "unsubscribe"){
       User.findOneAndUpdate({tag: message.author.tag},{notify:false});
+      //to stop cron job
+      //task.stop();
       message.reply("Unsubscribed :thumbsup:")
     }
   }
 })
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+module.export = {Client}
