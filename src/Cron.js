@@ -17,7 +17,7 @@ const groupBy = keys => array =>
   }, {});
 
 var task = cron.schedule(
-  "*/10 * * * * *", //"00 59 * * * *"
+  "00 59 * * * *", // "*/10 * * * * *"
   async() => {
     console.log("cron running");
     
