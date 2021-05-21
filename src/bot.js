@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const{task} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
-const { Client, DataResolver } = require("discord.js");
+const { Client, DataResolver,MessageEmbed } = require("discord.js");
 
 
 const client = new Client();
@@ -96,8 +96,8 @@ const findData = (tag , field) => {
           resolve(user.district_id)
         }
         else{
-          console.log(user.date)
-          resolve(user.date)
+          console.log(user.age)
+          resolve(user.age)
         }
       }
     })
@@ -132,78 +132,136 @@ client.on("message",async(message) => {
     else if(CMD_NAME === "state"){
       //resultObject = search(arguments, stateData);
       result = stateData.find(({state_name}) => state_name.toUpperCase() === arguments.toUpperCase());
+      
       if(!result){
-        message.channel.send(`Invalid state name.Please try again.`)
+        const embed_error = new MessageEmbed()
+        .setColor('#FB2A2A')
+        .setFooter(`Invalid state name.Please try again.`)
+        message.channel.send(`${message.member}`, {
+          embed: embed_error,
+         })
         return
       }
       createUser(message.author.tag,result.state_id,null);
 
       const district = await fetchDistricts(result.state_id);
       districtData= district.districts
-      var districtsMessage = ""
-      
+      var districtsMessage = "" 
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
+        //districtsMessage+=items.district_name
       })
       districtsMessage+="\nEnter your district name in format '$district districtname'"
-      message.reply(districtsMessage)
+      const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .addField(`${arguments}`,`${districtsMessage}`)
+        console.log((embed))
+        message.channel.send(`${message.member}`, {
+          embed: embed,
+         });
+      
+      //message.reply(districtsMessage)
     }
     else if(CMD_NAME === "district"){
       state_id = await findData(message.author.tag ,"state")
       if(!state_id){
-        message.reply("Enter your state first")
+        const embed_error = new MessageEmbed()
+        .setColor('#FB2A2A')
+        .setFooter(`Enter your state first`)
+        message.channel.send(`${message.member}`, {
+          embed: embed_error,
+         })
         return
       }
       const district = await fetchDistricts(state_id);
       districtData= district.districts
       result = districtData.find(x => (x.district_name).toUpperCase() === arguments.toUpperCase());
       if(!result){
-        message.reply("Invalid district name");
+        const embed_error = new MessageEmbed()
+        .setColor('#FB2A2A')
+        .setFooter(`Invalid district name`)
+        message.channel.send(`${message.member}`, {
+          embed: embed_error,
+         })
+        //message.reply("Invalid district name");
         return;
       }
-      console.log(result.district_id)
+      //console.log(result.district_id)
       createUser(message.author.tag,false,result.district_id)
-      message.reply(`Enter your date in format '$date 09-03-2021'`);
+      const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .setFooter(`Enter age in format '$age your_age'`)
+        message.channel.send(`${message.member}`, {
+          embed: embed,
+         })
+      //message.reply(`Enter your date in format '$date 09-03-2021'`);
     }
-    else if(CMD_NAME === "date") {
+    else if(CMD_NAME === "age") {
       district_id = await findData(message.author.tag,"district")
-      console.log(arguments)
+      //console.log(arguments)
       if(!district_id){
-        message.reply("Enter your district first")
+        const embed_error = new MessageEmbed()
+        .setColor('#FB2A2A')
+        .setFooter(`Enter your district first`)
+        message.channel.send(`${message.member}`, {
+          embed: embed_error,
+         })
+        //message.reply("Enter your preferred date first")
         return
       }
-      addDate(message.author.tag,arguments)
-      message.reply("Enter age in format '$age your_age'")
-    }
-    else if(CMD_NAME === "age"){
-      district_id = await findData(message.author.tag,"district")
-      date = await findData(message.author.tag,"date")
-      if(!date){
-        message.reply("Enter your preferred date first")
-        return
-      }
-      const slot = await fetchSlots(district_id,date);
-      slotMessage = ""
-      console.log(slot.sessions)
-      slotData = slot.sessions.filter((item) => item.min_age_limit<=arguments)
-
       User.findOneAndUpdate({tag: message.author.tag},{age: arguments},{new: true},(err,user) => {
         if(err){
           console.log("Error saving age")
         } 
+        else{
+          console.log(user)
+        }
       });
-
+      //addDate(message.author.tag,arguments)
+      const embed = new MessageEmbed()
+      .setColor('#DAF7A6')
+      .setFooter(`Enter your date in format '$date 09-03-2021'`)
+      message.channel.send(`${message.member}`, {
+        embed: embed,
+       })
+     // message.reply("Enter age in format '$age your_age'")
+    }
+    else if(CMD_NAME === "date"){
+      district_id = await findData(message.author.tag,"district")
+      age = await findData(message.author.tag,"age")
+      if(!age){
+        const embed_error = new MessageEmbed()
+        .setColor('#FB2A2A')
+        .setFooter(`Enter your age first`)
+        message.channel.send(`${message.member}`, {
+          embed: embed_error,
+         })
+        //message.reply("Enter your district first")
+        return
+      }
+      const slot = await fetchSlots(district_id,arguments);
+      slotMessage = "```\n\n"
+      console.log(slot.sessions)
+      slotData = slot.sessions.filter((item) => (item.min_age_limit<=age && item.available_capacity!=0))
+      //console.log(slotData) 
+      
       if(slotData.length){
         slotData.map((items)=>{
-          slotMessage+=" |`"+items.name+" "+items.vaccine+" ("+items.available_capacity+") `|";
+          slotMessage+=" "+items.name+" "+items.vaccine+" Available Capacity("+items.available_capacity+") \n";
         })
-        slotMessage += "\n Book vaccine https://selfregistration.cowin.gov.in/"
+        slotMessage += "```\n Book vaccine https://selfregistration.cowin.gov.in/"
       }
       else{
         slotMessage = "No slot available"
       } 
-      slotMessage += "\nEnter $notify dd-mm-yyyy to get slot availability notifications for a particular date"  
-      message.reply(slotMessage) 
+      notify_Message = "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date"  
+      //message.reply(slotMessage) 
+      const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .addField('Available Slots',`${slotMessage}`)
+        .setFooter(`${notify_Message}`)
+        //console.log((embed))
+        message.channel.send( embed);
     }else if(CMD_NAME === "notify"){
       addDate(message.author.tag,arguments);
       //to start cron job
@@ -215,12 +273,28 @@ client.on("message",async(message) => {
         }
       });
       check = await findData(message.author.tag,"notify")
-      message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
+      const embed = new MessageEmbed()
+      .setColor('#DAF7A6')
+      .setTitle(`We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
+      message.channel.send(`${message.member}`, {
+        embed: embed,
+       })
+      //message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
     }else if(CMD_NAME === "unsubscribe"){
-      User.findOneAndUpdate({tag: message.author.tag},{notify:false});
+      User.findOneAndUpdate({tag: message.author.tag},{notify:false},(err,user) => {
+        if(err){
+          console.log("Error notify")
+        }
+      });
       //to stop cron job
       //task.stop();
-      message.reply("Unsubscribed :thumbsup:")
+      const embed = new MessageEmbed()
+      .setColor('#DAF7A6')
+      .setTitle(`Unsubscribed :thumbsup:`)
+      message.channel.send(`${message.member}`, {
+        embed: embed,
+       })
+      //message.reply("Unsubscribed :thumbsup:")
     }
   }
 })
