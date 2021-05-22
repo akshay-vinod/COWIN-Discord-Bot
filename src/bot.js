@@ -1,7 +1,7 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 
-const{task} = require('./Cron')
+const{ hourlyTask,dailyTask} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
 const { Client, DataResolver,MessageEmbed } = require("discord.js");
@@ -44,7 +44,8 @@ client.on("ready", () => {
   //console.log(stateData)
   })();
   //console.log(client.users.cache)
-  task.start()
+  hourlyTask.start()
+  dailyTask.start()
 });
 
 const createUser = (tag, stateid, districtid) => {
@@ -95,9 +96,15 @@ const findData = (tag , field) => {
           console.log(user.district_id)
           resolve(user.district_id)
         }
-        else{
+        else if(field === "date"){
+          resolve(user.date)
+        }
+        else if(field === "age"){
           console.log(user.age)
           resolve(user.age)
+        }
+        else{
+          resolve(user)
         }
       }
     })
@@ -155,7 +162,6 @@ client.on("message",async(message) => {
       const embed = new MessageEmbed()
         .setColor('#DAF7A6')
         .addField(`${arguments}`,`${districtsMessage}`)
-        console.log((embed))
         message.channel.send(`${message.member}`, {
           embed: embed,
          });
@@ -217,7 +223,6 @@ client.on("message",async(message) => {
           console.log(user)
         }
       });
-      //addDate(message.author.tag,arguments)
       const embed = new MessageEmbed()
       .setColor('#DAF7A6')
       .setFooter(`Enter your date in format '$date 09-03-2021'`)
@@ -240,45 +245,129 @@ client.on("message",async(message) => {
         return
       }
       const slot = await fetchSlots(district_id,arguments);
-      slotMessage = "```\n\n"
+      slotMessage = "```"
       console.log(slot.sessions)
       slotData = slot.sessions.filter((item) => (item.min_age_limit<=age && item.available_capacity!=0))
       //console.log(slotData) 
-      
+      flag =false
       if(slotData.length){
         slotData.map((items)=>{
           slotMessage+=" "+items.name+" "+items.vaccine+" Available Capacity("+items.available_capacity+") \n";
         })
-        slotMessage += "```\n Book vaccine https://selfregistration.cowin.gov.in/"
+        slotMessage += "``` Book vaccine https://selfregistration.cowin.gov.in/"
+        flag =true
       }
       else{
         slotMessage = "No slot available"
       } 
       notify_Message = "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date"  
       //message.reply(slotMessage) 
-      const embed = new MessageEmbed()
+      var fieldTitle = "😕"
+      if(flag){
+        fieldTitle="Available Slot"
+      }
+      
+      if(slotMessage.length< 1000){
+          var slotMessage1 = slotMessage.split("\n")
+          console.log(slotMessage1)
+          const split_index =slotMessage1.length
+          if(split_index % 2 !=0){
+            slotMessage1.push("")
+            split_index+=1
+          }
+          var  slotMessage2= slotMessage1.slice(split_index/2,split_index) ;
+          slotMessage1= slotMessage1.slice(0,split_index/2) ;
+          slotMessage1_text = slotMessage1.join("\n")
+          slotMessage2_text = slotMessage2.join("\n")
+        const embed1 = new MessageEmbed()
         .setColor('#DAF7A6')
-        .addField('Available Slots',`${slotMessage}`)
+        .addField(`${fieldTitle}`,`${slotMessage1_text}`)
+        .setFooter(`${notify_Message}`)
+        const embed2 = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .addField(`${fieldTitle}`,`${slotMessage2_text}`)
+        .setFooter(`${notify_Message}`)
+        //console.log((embed))
+        message.channel.send( embed1);
+        message.channel.send( embed2);
+
+      }else{
+        const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .addField(`${fieldTitle}`,`${slotMessage}`)
         .setFooter(`${notify_Message}`)
         //console.log((embed))
         message.channel.send( embed);
+      }
+      
     }else if(CMD_NAME === "notify"){
+      
+      var {district_id,state_id,age,date} = await findData(message.author.tag,"user")
+      console.log(district_id,state_id,age,date)
+      
+      /*if(!date || date===undefined){
+          if(!age){
+            if(!district_id){
+              if(!state_id){
+                const embed_error = new MessageEmbed()
+                .setColor('#FB2A2A')
+                .setTitle(`Enter state first in the format '$state state_name`) 
+                message.channel.send(`${message.member}`, {
+                  embed: embed_error,
+                })
+                return
+              }
+              else{
+                const embed_error = new MessageEmbed()
+                .setColor('#FB2A2A')
+                .setTitle(`Enter district first in the format '$district district_name'`)
+                message.channel.send(`${message.member}`, {
+                  embed: embed_error,
+                })
+                return
+              }
+            }
+            else{
+              const embed_error = new MessageEmbed()
+              .setColor('#FB2A2A')
+              .setTitle(`Enter date first in the format '$date 09-03-2021'`)
+              message.channel.send(`${message.member}`, {
+                embed: embed_error,
+              })
+              return
+            }
+          }
+          else{
+            const embed_error = new MessageEmbed()
+            .setColor('#FB2A2A')
+            .setTitle(`Enter yor age first in the format '$age your_age'`)
+            message.channel.send(`${message.member}`, {
+              embed: embed_error,
+            })
+           return
+          }
+          console.log("no date")
+        
+      }
+      else{
+        //console.log("date added already")
+        console.log("adding date......")
+        
+      }*/
       addDate(message.author.tag,arguments);
-      //to start cron job
-      //task.start();
-      console.log(message.author.id)
-      User.findOneAndUpdate({tag: message.author.tag},{notify: true ,user_id:message.author.id },(err,user) => {
-        if(err){
-          console.log("Error notify")
-        }
-      });
-      check = await findData(message.author.tag,"notify")
-      const embed = new MessageEmbed()
-      .setColor('#DAF7A6')
-      .setTitle(`We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
-      message.channel.send(`${message.member}`, {
-        embed: embed,
-       })
+        User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age,notify_date:date},(err,user) => {
+          if(err){
+            console.log("Error notify")
+          }
+        }); 
+        check = await findData(message.author.tag,"notify")
+        const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .setTitle(`We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
+        message.channel.send(`${message.member}`, {
+          embed: embed,
+         })
+      
       //message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
     }else if(CMD_NAME === "unsubscribe"){
       User.findOneAndUpdate({tag: message.author.tag},{notify:false},(err,user) => {
@@ -287,7 +376,7 @@ client.on("message",async(message) => {
         }
       });
       //to stop cron job
-      //task.stop();
+      //hourlyTask.stop();
       const embed = new MessageEmbed()
       .setColor('#DAF7A6')
       .setTitle(`Unsubscribed :thumbsup:`)
@@ -302,3 +391,4 @@ client.on("message",async(message) => {
 client.login(process.env.DISCORD_BOT_TOKEN);
 
 global.client = client;
+global.findData = findData;
