@@ -4,7 +4,8 @@ const mongoose = require("mongoose");
 const{ hourlyTask,dailyTask} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
-const { Client, DataResolver,MessageEmbed } = require("discord.js");
+const { Client, MessageEmbed } = require("discord.js");
+const dayjs = require("dayjs");
 
 
 const client = new Client();
@@ -22,7 +23,7 @@ mongoose.connect(process.env.DATABASE,{
   useCreateIndex: true,
   useFindAndModify: false})
   .then(() => console.log("DB Connected"))
-  .catch((error) => console.log(error));
+  .catch((error) => console.log("Error connecting DB",error));
 
 mongoose.connection.on('error', err => console.log(err));
 
@@ -71,8 +72,9 @@ const createUser = (tag, stateid, districtid) => {
     })
   }
 }
-const addDate = (tag, date) => {
-  User.findOneAndUpdate({tag},{date},{new: true},(err,user) => {
+const addData = (tag,notify,notify_district_id,notify_age,date,daily_notify) => {
+  notify_date = date ? date : dayjs().format("DD-MM-YYYY")
+  User.findOneAndUpdate({tag},{notify,notify_district_id,notify_age,notify_date,daily_notify},{new: true},(err,user) => {
     if(err){
       console.log("DB error while adding date")
     }
@@ -374,15 +376,13 @@ client.on("message",async(message) => {
         console.log("adding date......")
         
       }*/
-      if(!arguments){
-        User.updateOne({tag:message.author.tag})
-      }
-      addDate(message.author.tag,arguments,daily_notify);
-        User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age,notify_date:date},(err,user) => {
+      
+      addData(message.author.tag,true,district_id,age,arguments,!arguments);
+        /*User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age},(err,user) => {
           if(err){
             console.log("Error notify")
           }
-        }); 
+        });*/
         check = await findData(message.author.tag,"notify")
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
