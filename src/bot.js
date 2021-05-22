@@ -72,7 +72,6 @@ const createUser = (tag, stateid, districtid) => {
   }
 }
 const addDate = (tag, date) => {
-  formattedDate = new Date(date)
   User.findOneAndUpdate({tag},{date},{new: true},(err,user) => {
     if(err){
       console.log("DB error while adding date")
@@ -93,14 +92,14 @@ const findData = (tag , field) => {
         if(field === "state")
           resolve(user.state_id) 
         else if(field === "district"){
-          console.log(user.district_id)
+          //console.log(user.district_id)
           resolve(user.district_id)
         }
         else if(field === "date"){
           resolve(user.date)
         }
         else if(field === "age"){
-          console.log(user.age)
+          //console.log(user.age)
           resolve(user.age)
         }
         else{
@@ -232,8 +231,8 @@ client.on("message",async(message) => {
      // message.reply("Enter age in format '$age your_age'")
     }
     else if(CMD_NAME === "date"){
-      district_id = await findData(message.author.tag,"district")
-      age = await findData(message.author.tag,"age")
+      var {district_id,user_id,age,date} = await findData(message.author.tag,"user")
+      
       if(!age){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
@@ -245,16 +244,16 @@ client.on("message",async(message) => {
         return
       }
       const slot = await fetchSlots(district_id,arguments);
-      slotMessage = "```"
-      console.log(slot.sessions)
+      slotMessage = ""
+      //console.log(slot.sessions)
       slotData = slot.sessions.filter((item) => (item.min_age_limit<=age && item.available_capacity!=0))
-      //console.log(slotData) 
+      console.log(slotData) 
       flag =false
       if(slotData.length){
         slotData.map((items)=>{
-          slotMessage+=" "+items.name+" "+items.vaccine+" Available Capacity("+items.available_capacity+") \n";
+          slotMessage+=" "+items.name+" "+items.vaccine+" Slots Available->"+items.available_capacity+"\n";
         })
-        slotMessage += "``` Book vaccine https://selfregistration.cowin.gov.in/"
+        //slotMessage += "``` Book vaccine https://selfregistration.cowin.gov.in/"
         flag =true
       }
       else{
@@ -263,11 +262,40 @@ client.on("message",async(message) => {
       notify_Message = "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date"  
       //message.reply(slotMessage) 
       var fieldTitle = "😕"
+      //console.log(slotMessage.length)
+      const chunk = (arr, size) => arr.reduce((acc, e, i) => (i % size ? acc[acc.length - 1].push(e) : acc.push([e]), acc), []);
       if(flag){
         fieldTitle="Available Slot"
+        var footer_message = "" 
+        var slotMessage1 = chunk(slotMessage.split("\n"),10)
+
+        slotMessage1.map((items,i)=>{
+          var slotMessage2 ="```"
+          slotMessage2+= items.join("\n") +"```"
+          if(slotMessage1.length === i+1){
+            slotMessage2+="\nBook vaccine https://selfregistration.cowin.gov.in/"
+            footer_message =notify_Message
+          }
+          if( i ===1){
+            fieldTitle="⏬"
+          }
+          const embed = new MessageEmbed() 
+          .setColor('#DAF7A6')
+          .addField(`${fieldTitle}`,`${slotMessage2}`)
+          .setFooter(`${footer_message}`)
+        //console.log((embed))
+           message.channel.send(`<@${user_id}>`,{embed:embed});
+        })
       }
-      
-      if(slotMessage.length< 1000){
+      else{
+        const embed = new MessageEmbed()
+        .setColor('#FFC83D')
+        .addField(`${fieldTitle}`,`${slotMessage}`)
+        .setFooter(`${notify_Message}`)
+        //console.log((embed))
+        message.channel.send(`<@${user_id}>`,{embed:embed});
+      }
+      /*if(slotMessage.length/2 > 1000){
           var slotMessage1 = slotMessage.split("\n")
           console.log(slotMessage1)
           const split_index =slotMessage1.length
@@ -277,12 +305,11 @@ client.on("message",async(message) => {
           }
           var  slotMessage2= slotMessage1.slice(split_index/2,split_index) ;
           slotMessage1= slotMessage1.slice(0,split_index/2) ;
-          slotMessage1_text = slotMessage1.join("\n")
-          slotMessage2_text = slotMessage2.join("\n")
+          slotMessage1_text = slotMessage1.join("\n") + "```"
+          slotMessage2_text ="```" + slotMessage2.join("\n")
         const embed1 = new MessageEmbed()
         .setColor('#DAF7A6')
         .addField(`${fieldTitle}`,`${slotMessage1_text}`)
-        .setFooter(`${notify_Message}`)
         const embed2 = new MessageEmbed()
         .setColor('#DAF7A6')
         .addField(`${fieldTitle}`,`${slotMessage2_text}`)
@@ -291,19 +318,12 @@ client.on("message",async(message) => {
         message.channel.send( embed1);
         message.channel.send( embed2);
 
-      }else{
-        const embed = new MessageEmbed()
-        .setColor('#DAF7A6')
-        .addField(`${fieldTitle}`,`${slotMessage}`)
-        .setFooter(`${notify_Message}`)
-        //console.log((embed))
-        message.channel.send( embed);
-      }
+      }*/
       
     }else if(CMD_NAME === "notify"){
       
       var {district_id,state_id,age,date} = await findData(message.author.tag,"user")
-      console.log(district_id,state_id,age,date)
+      //console.log(district_id,state_id,age,date)
       
       /*if(!date || date===undefined){
           if(!age){
@@ -354,7 +374,10 @@ client.on("message",async(message) => {
         console.log("adding date......")
         
       }*/
-      addDate(message.author.tag,arguments);
+      if(!arguments){
+        User.updateOne({tag:message.author.tag})
+      }
+      addDate(message.author.tag,arguments,daily_notify);
         User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age,notify_date:date},(err,user) => {
           if(err){
             console.log("Error notify")

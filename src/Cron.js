@@ -6,8 +6,8 @@ const { Client, DataResolver, MessageEmbed } = require("discord.js");
 const { fetchSlots } = require("./state");
 const user = require("./user");
 const dayjs = require("dayjs");
-var customParseFormat = require("dayjs/plugin/customParseFormat")
-dayjs.extend(customParseFormat)
+var customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 
 //for cron job
 
@@ -38,26 +38,27 @@ var hourlyTask = cron.schedule(
     groupedUsers = await groupBy(["district_id", "notify_date"])(users);
 
     Object.entries(groupedUsers).forEach((entry) => {
-      const [key,values] = entry;
+      const [key, values] = entry;
       values.forEach((value) => {
-        if(value.daily_notify){
-          newDate = dayjs(value.notify_date,'DD-MM-YYYY').add(1,'day').format('DD-MM-YYYY')
-          newKey=value.district_id+"_"+newDate
-          if(!groupedUsers[newKey])
-            groupedUsers[newKey]=[]
-          groupedUsers[newKey].push(value)
+        if (value.daily_notify) {
+          newDate = dayjs(value.notify_date, "DD-MM-YYYY")
+            .add(1, "day")
+            .format("DD-MM-YYYY");
+          newKey = value.district_id + "_" + newDate;
+          if (!groupedUsers[newKey]) groupedUsers[newKey] = [];
+          groupedUsers[newKey].push(value);
         }
-      }) 
-    })
-    
-    console.log(groupedUsers)
+      });
+    });
+
+    console.log(groupedUsers);
 
     Object.entries(groupedUsers).forEach(async (entry) => {
       const [key, values] = entry;
       const [district_id, date] = key.trim().split(/\_/);
       slot = await fetchSlots(district_id, date);
-      if(!slot || !slot.sessions.length){
-        return
+      if (!slot || !slot.sessions.length) {
+        return;
       }
       //availableSlots = slot.sessions.filter((item) => item.available_capacity>0)
 
@@ -116,14 +117,15 @@ var hourlyTask = cron.schedule(
             });
             slotMessage +=
               "```\n Book vaccine https://selfregistration.cowin.gov.in/";
-            
+
             const embed = new MessageEmbed()
               .setColor("#DAF7A6")
               .addField("Available Slots", `${slotMessage}`);
-            client.users.cache.get(value.user_id).send(embed);}
+            client.users.cache.get(value.user_id).send(embed);
+          }
         } else if (value.age >= 18) {
           //console.log(youthSlots)
-           slotMessage = "```\n\n";
+          slotMessage = "```\n\n";
           if (youthSlots.length) {
             youthSlots.map((items) => {
               slotMessage +=
@@ -137,7 +139,7 @@ var hourlyTask = cron.schedule(
             });
             slotMessage +=
               "```\n Book vaccine https://selfregistration.cowin.gov.in/";
-            
+
             const embed = new MessageEmbed()
               .setColor("#DAF7A6")
               .addField("Available Slots", `${slotMessage}`);
@@ -152,13 +154,14 @@ var hourlyTask = cron.schedule(
   }
 );
 
-var dailyTask = cron.schedule("*/50 * * * * *",//"0 1 0 * * *"
- async() => {
-  console.log("Running every 30 seconds")
-  
-  users = await User.find({notify:true}).exec();
-  
-  /*User.updateMany({notify:true, daily_notify: true},{"$set": {"notify_date": dayjs(notify_date,'DD-MM-YYYY').add(1,'day').format('DD-MM-YYYY')}},(err,res)=> {
+var dailyTask = cron.schedule(
+  "0 1 0 * * *", // "*/50 * * * * *"
+  async () => {
+    console.log("Running every 30 seconds");
+
+    users = await User.find({ notify: true }).exec();
+
+    /*User.updateMany({notify:true, daily_notify: true},{"$set": {"notify_date": dayjs(notify_date,'DD-MM-YYYY').add(1,'day').format('DD-MM-YYYY')}},(err,res)=> {
     if(err){
       console.log(err)
     } else{
@@ -166,26 +169,41 @@ var dailyTask = cron.schedule("*/50 * * * * *",//"0 1 0 * * *"
     }
   })*/
 
-  if(!users.length){
-    return
-  }
-  
-  users.map((item) => {
-    if(item.daily_notify){
-      User.findOneAndUpdate({tag: item.tag},{notify_date: dayjs(item.notify_date,'DD-MM-YYYY').add(1,'day').format('DD-MM-YYYY')},(err,user) => {
-        if(err){
-          console.log("Error updating date")
-        }
-      })
-    }else if(dayjs(item.notify_date,'DD-MM-YYYY').isBefore(dayjs()))
-    {
-      User.findOneAndUpdate({tag: item.tag},{notify: false},(err,user) => {
-        if(err){ console.log("Error updating notify")}
-      })
+    if (!users.length) {
+      return;
     }
-  })
-}, {
-  timezone: "Asia/Kolkata",
-})
 
-module.exports = { hourlyTask,dailyTask };
+    users.map((item) => {
+      if (item.daily_notify) {
+        User.findOneAndUpdate(
+          { tag: item.tag },
+          {
+            notify_date: dayjs(item.notify_date, "DD-MM-YYYY")
+              .add(1, "day")
+              .format("DD-MM-YYYY"),
+          },
+          (err, user) => {
+            if (err) {
+              console.log("Error updating date");
+            }
+          }
+        );
+      } else if (dayjs(item.notify_date, "DD-MM-YYYY").isBefore(dayjs())) {
+        User.findOneAndUpdate(
+          { tag: item.tag },
+          { notify: false },
+          (err, user) => {
+            if (err) {
+              console.log("Error updating notify");
+            }
+          }
+        );
+      }
+    });
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
+
+module.exports = { hourlyTask, dailyTask };
