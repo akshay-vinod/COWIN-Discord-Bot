@@ -1,12 +1,12 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
+const dayjs = require("dayjs");
+const { Client, MessageEmbed } = require("discord.js");
 
 const{ hourlyTask,dailyTask} = require('./Cron')
 const {fetchState,fetchDistricts,fetchSlots} = require("./state")
 const User = require("./user")
-const { Client, MessageEmbed } = require("discord.js");
-const dayjs = require("dayjs");
-
+const welcome = require("./welcome")
 
 const client = new Client();
 
@@ -44,20 +44,21 @@ client.on("ready", () => {
   stateData = state.states
   //console.log(stateData)
   })();
-  //console.log(client.users.cache)
+
   hourlyTask.start()
   dailyTask.start()
+  welcome(client)
 });
 
-const createUser = (tag, stateid, districtid) => {
+const createUser = (tag,user_id, state_id, districtid) => {
   const options = {
     new: true,
     upsert: true,
   }
-  if(stateid){
-    User.findOneAndUpdate({tag: tag},{state_id: stateid, district_id: ""}, options, (err,user) => {
+  if(state_id){
+    User.findOneAndUpdate({tag: tag},{user_id,state_id, district_id: ""}, options, (err,user) => {
       if(err || !user){
-        console.log("DB error while adding state name")
+        console.log("DB error while creating user")
       }else{
         console.log(user)
       }
@@ -87,21 +88,17 @@ const findData = (tag , field) => {
   return new Promise((resolve,reject)=>{
     User.findOne({tag},(err,user) => {
       if(err || !user){
-        //console.log("User doesn't exist")
         resolve(0);
       }else {
-        //console.log("State id",user.state_id)
         if(field === "state")
           resolve(user.state_id) 
         else if(field === "district"){
-          //console.log(user.district_id)
           resolve(user.district_id)
         }
         else if(field === "date"){
           resolve(user.date)
         }
         else if(field === "age"){
-          //console.log(user.age)
           resolve(user.age)
         }
         else{
@@ -131,9 +128,8 @@ client.on("message",async(message) => {
        /* stateData.map(items=>{
             message.channel.send(items.state_name)
         })*/
-        console.log(client.users)
-        message.author.send("Your message here.")
-      
+        //console.log(client.users)
+        //message.author.send("Your message here.")
       message.channel.send("Enter your state name in format '$state statename'")
       
     }
@@ -150,14 +146,13 @@ client.on("message",async(message) => {
          })
         return
       }
-      createUser(message.author.tag,result.state_id,null);
+      createUser(message.author.tag,message.author.id,result.state_id,null);
 
       const district = await fetchDistricts(result.state_id);
       districtData= district.districts
       var districtsMessage = "" 
       districtData.map(items=>{
         districtsMessage+=" |`"+items.district_name+"`|"
-        //districtsMessage+=items.district_name
       })
       districtsMessage+="\nEnter your district name in format '$district districtname'"
       const embed = new MessageEmbed()
@@ -167,7 +162,6 @@ client.on("message",async(message) => {
           embed: embed,
          });
       
-      //message.reply(districtsMessage)
     }
     else if(CMD_NAME === "district"){
       state_id = await findData(message.author.tag ,"state")
@@ -190,18 +184,15 @@ client.on("message",async(message) => {
         message.channel.send(`${message.member}`, {
           embed: embed_error,
          })
-        //message.reply("Invalid district name");
         return;
       }
-      //console.log(result.district_id)
-      createUser(message.author.tag,false,result.district_id)
+      createUser(message.author.tag,"",false,result.district_id)
       const embed = new MessageEmbed()
         .setColor('#DAF7A6')
-        .setFooter(`Enter age in format '$age your_age'`)
+        .setFooter(`Enter your age in format '$age your_age'`)
         message.channel.send(`${message.member}`, {
           embed: embed,
          })
-      //message.reply(`Enter your date in format '$date 09-03-2021'`);
     }
     else if(CMD_NAME === "age") {
       district_id = await findData(message.author.tag,"district")
@@ -226,14 +217,13 @@ client.on("message",async(message) => {
       });
       const embed = new MessageEmbed()
       .setColor('#DAF7A6')
-      .setFooter(`Enter your date in format '$date 09-03-2021'`)
+      .setFooter(`Enter your preferred date in format '$date 09-03-2021'`)
       message.channel.send(`${message.member}`, {
         embed: embed,
        })
-     // message.reply("Enter age in format '$age your_age'")
     }
     else if(CMD_NAME === "date"){
-      var {district_id,user_id,age,date} = await findData(message.author.tag,"user")
+      var {district_id,user_id,age} = await findData(message.author.tag,"user")
       
       if(!age){
         const embed_error = new MessageEmbed()
@@ -247,15 +237,16 @@ client.on("message",async(message) => {
       }
       const slot = await fetchSlots(district_id,arguments);
       slotMessage = ""
-      //console.log(slot.sessions)
       slotData = slot.sessions.filter((item) => (item.min_age_limit<=age && item.available_capacity!=0))
-      console.log(slotData) 
+      //console.log(slotData) 
       flag =false
       if(slotData.length){
         slotData.map((items)=>{
-          slotMessage+=" "+items.name+" "+items.vaccine+" Slots Available->"+items.available_capacity+"\n";
+          var fee = "free"
+          if(items.fee !="0") fee = `paid(Rs.${items.fee})`
+          slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
+          
         })
-        //slotMessage += "``` Book vaccine https://selfregistration.cowin.gov.in/"
         flag =true
       }
       else{
@@ -267,9 +258,9 @@ client.on("message",async(message) => {
       //console.log(slotMessage.length)
       const chunk = (arr, size) => arr.reduce((acc, e, i) => (i % size ? acc[acc.length - 1].push(e) : acc.push([e]), acc), []);
       if(flag){
-        fieldTitle="Available Slot"
+        fieldTitle=`Available Slots  - 📅${arguments}`
         var footer_message = "" 
-        var slotMessage1 = chunk(slotMessage.split("\n"),10)
+        var slotMessage1 = chunk(slotMessage.split("\n"),8)
 
         slotMessage1.map((items,i)=>{
           var slotMessage2 ="```"
@@ -324,9 +315,18 @@ client.on("message",async(message) => {
       
     }else if(CMD_NAME === "notify"){
       
-      var {district_id,state_id,age,date} = await findData(message.author.tag,"user")
+      var {district_id,state_id,user_id,age} = await findData(message.author.tag,"user")
       //console.log(district_id,state_id,age,date)
-      
+      if(!district_id || !state_id || !age){
+        var alert = "You haven't given all the required details yet. Begin by entering your statename in the format '$state statename' "
+        const embed = new MessageEmbed()
+        .setColor('#F03A17')
+        .addField("❗❗❗",`${alert}`)
+        //console.log((embed))
+        message.channel.send(`<@${message.author.id}>`,{embed:embed});
+        //message.reply("")
+        return;
+      }
       /*if(!date || date===undefined){
           if(!age){
             if(!district_id){
@@ -386,16 +386,15 @@ client.on("message",async(message) => {
         check = await findData(message.author.tag,"notify")
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
-        .setTitle(`We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
+        .setTitle(`We'll check for slots every hour and notify you if available :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
         message.channel.send(`${message.member}`, {
           embed: embed,
          })
       
-      //message.reply("We'll notify you every hour :raised_hands: \nEnter $unsubscribe anytime to stop updates")
     }else if(CMD_NAME === "unsubscribe"){
-      User.findOneAndUpdate({tag: message.author.tag},{notify:false},(err,user) => {
+      User.findOneAndUpdate({tag: message.author.tag},{notify:false,daily_notify: false},(err,user) => {
         if(err){
-          console.log("Error notify")
+          console.log("Error while unsubscribing")
         }
       });
       //to stop cron job
@@ -407,6 +406,8 @@ client.on("message",async(message) => {
         embed: embed,
        })
       //message.reply("Unsubscribed :thumbsup:")
+    }else{
+      message.reply("Invalid command.")
     }
   }
 })

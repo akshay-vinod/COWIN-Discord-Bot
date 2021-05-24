@@ -4,12 +4,50 @@ const User = require("./user");
 //const { client } = require("./bot");
 const { Client, DataResolver, MessageEmbed } = require("discord.js");
 const { fetchSlots } = require("./state");
-const user = require("./user");
 const dayjs = require("dayjs");
 var customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 
+//for slicing available slots
+const chunk = (arr, size) =>
+  arr.reduce(
+    (acc, e, i) => (
+      i % size ? acc[acc.length - 1].push(e) : acc.push([e]), acc
+    ),
+    []
+  );
 //for cron job
+const embedMessage = (slotMessage, user_id, date) => {
+  var fieldTitle = `Available Slot  - 📅${date}`;
+  var notify_Message =
+    "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date";
+  var footer_message = "";
+  var slotMessage1 = chunk(slotMessage.split("\n"), 10);
+  //console.log(slotMessage1);
+  slotMessage1.map(async(items, i) => {
+    var slotMessage2 = "```";
+    slotMessage2 += items.join("\n") + "```";
+    if (slotMessage1.length === i + 1) {
+      slotMessage2 += "\nBook vaccine https://selfregistration.cowin.gov.in/";
+      footer_message = notify_Message;
+    }
+    if (i === 1) {
+      fieldTitle = "⏬";
+    }
+    const embed = new MessageEmbed()
+      .setColor("#DAF7A6")
+      .addField(`${fieldTitle}`, `${slotMessage2}`)
+      .setFooter(`${footer_message}`);
+
+    //console.log((embed))
+    //message.channel.send(`<@${user_id}>`,{embed:embed});
+    //console.log("userid", user_id);
+    var userid = await (client.users.cache.get(user_id))
+    if (!client.users.cache.get(user_id))
+      console.log("can't find user in cache");
+    userid.send(embed)
+  });
+}
 
 //grouping objects by multiple keys
 const groupBy = (keys) => (array) =>
@@ -20,7 +58,7 @@ const groupBy = (keys) => (array) =>
   }, {});
 
 var hourlyTask = cron.schedule(
-  "00 59 * * * *", //"*/20 * * * * *"
+  "00 59 * * * *", // "*/50 * * * * *"
   async () => {
     console.log("cron running");
     //date = await findData("Akshay Vinod#1878","date")
@@ -51,99 +89,60 @@ var hourlyTask = cron.schedule(
       });
     });
 
-    console.log(groupedUsers);
+    //console.log(groupedUsers);
 
     Object.entries(groupedUsers).forEach(async (entry) => {
       const [key, values] = entry;
       const [district_id, date] = key.trim().split(/\_/);
-      slot = await fetchSlots(district_id, date);
+      let slot = await fetchSlots(district_id, date);
       if (!slot || !slot.sessions.length) {
         return;
       }
       //availableSlots = slot.sessions.filter((item) => item.available_capacity>0)
 
-      youthSlots = slot.sessions.filter(
+      let youthSlots = slot.sessions.filter(
         (item) => item.min_age_limit <= 18 && item.available_capacity != 0
       );
-      middleSlots = slot.sessions.filter(
+      let middleSlots = slot.sessions.filter(
         (item) => item.min_age_limit <= 45 && item.available_capacity != 0
       );
-      elderlySlots = slot.sessions.filter(
+      let elderlySlots = slot.sessions.filter(
         (item) => item.min_age_limit <= 60 && item.available_capacity != 0
       );
       values.forEach((value) => {
-        //console.log(value.tag);
-        //console.log(value.user_id);
         if (value.age >= 60) {
-          //console.log("elderly:",elderlySlots)
-          //send message
-          slotMessage = "```\n\n";
+          var slotMessage = "";
           if (elderlySlots.length) {
             elderlySlots.map((items) => {
-              slotMessage +=
-                " " +
-                items.name +
-                " " +
-                items.vaccine +
-                " Available Capacity(" +
-                items.available_capacity +
-                ") \n";
+              var fee = "free"
+          if(items.fee !="0") fee = `paid(Rs.${item.fee})`
+          slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            slotMessage +=
-              "```\n Book vaccine https://selfregistration.cowin.gov.in/";
+            embedMessage(slotMessage, value.user_id, date);
             //console.log(elderlySlots);
-            const embed = new MessageEmbed()
-              .setColor("#DAF7A6")
-              .addField("Available Slots", `${slotMessage}`);
-            //client.users.cache.get(value.user_id).send(embed);
           }
-          //var slotMessage = "";
 
-          //console.log((embed))
-          //message.channel.send( embed);
         } else if (value.age >= 45) {
-          //console.log(middleSlots)
-          slotMessage = "```\n\n";
+          slotMessage = "";
           if (middleSlots.length) {
             middleSlots.map((items) => {
-              slotMessage +=
-                " " +
-                items.name +
-                " " +
-                items.vaccine +
-                " Available Capacity(" +
-                items.available_capacity +
-                ") \n";
+              var fee = "free"
+          if(items.fee !="0") fee = `paid(Rs.${item.fee})`
+          slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            slotMessage +=
-              "```\n Book vaccine https://selfregistration.cowin.gov.in/";
-
-            const embed = new MessageEmbed()
-              .setColor("#DAF7A6")
-              .addField("Available Slots", `${slotMessage}`);
-            client.users.cache.get(value.user_id).send(embed);
+            embedMessage(slotMessage, value.user_id, date);
+            //console.log(middleSlots);
           }
         } else if (value.age >= 18) {
-          //console.log(youthSlots)
-          slotMessage = "```\n\n";
+          slotMessage = "";
           if (youthSlots.length) {
             youthSlots.map((items) => {
-              slotMessage +=
-                " " +
-                items.name +
-                " " +
-                items.vaccine +
-                " Available Capacity(" +
-                items.available_capacity +
-                ") \n";
+              var fee = "free"
+          if(items.fee !="0") fee = `paid(Rs.${item.fee})`
+          slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            slotMessage +=
-              "```\n Book vaccine https://selfregistration.cowin.gov.in/";
-
-            const embed = new MessageEmbed()
-              .setColor("#DAF7A6")
-              .addField("Available Slots", `${slotMessage}`);
-            client.users.cache.get(value.user_id).send(embed);
+            embedMessage(slotMessage, value.user_id, date);
+            //console.log(youngSlots);
           }
         }
       });
@@ -157,17 +156,10 @@ var hourlyTask = cron.schedule(
 var dailyTask = cron.schedule(
   "0 1 0 * * *", // "*/50 * * * * *"
   async () => {
-    console.log("Running every 30 seconds");
+    console.log("Running every day at 00:01");
 
     users = await User.find({ notify: true }).exec();
 
-    /*User.updateMany({notify:true, daily_notify: true},{"$set": {"notify_date": dayjs(notify_date,'DD-MM-YYYY').add(1,'day').format('DD-MM-YYYY')}},(err,res)=> {
-    if(err){
-      console.log(err)
-    } else{
-      console.log(res)
-    }
-  })*/
 
     if (!users.length) {
       return;
