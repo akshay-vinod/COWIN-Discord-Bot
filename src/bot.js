@@ -44,6 +44,13 @@ client.on("ready", () => {
   stateData = state.states
   //console.log(stateData)
   })();
+  client.user.setPresence({
+    status: 'available',
+    activity: {
+        name: '$start',
+        type: 'LISTENING',
+    }
+});
 
   hourlyTask.start()
   dailyTask.start()
@@ -124,13 +131,22 @@ client.on("message",async(message) => {
     .trim()
     .substring(PREFIX.length)
     .split(/\s(.+)?/,2);
-    if(CMD_NAME === "startz"){
+    if(CMD_NAME === "start"){
        /* stateData.map(items=>{
             message.channel.send(items.state_name)
         })*/
         //console.log(client.users)
         //message.author.send("Your message here.")
-      message.channel.send("Enter your state name in format '$state statename'")
+        const embed = new MessageEmbed()
+        .setColor('#DAF7A6')
+        .setTitle("VaccienKaro")
+        .setDescription("Hey there!:wave: I am VaccineKaro, I will check Covid vaccination slots availability in your area and alert you when a slot becomes available.")
+        .addField("To get started by entering","`$state statename`")
+        .setThumbnail("https://i.ibb.co/Wxsn61G/logo.png")
+        .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
+        message.channel.send(`<@${message.author.id}>`, {
+          embed: embed,
+         })
       
     }
     else if(CMD_NAME === "state"){
@@ -140,8 +156,8 @@ client.on("message",async(message) => {
       if(!result){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
-        .setFooter(`Invalid state name.Please try again.`)
-        message.channel.send(`${message.member}`, {
+        .setTitle(`Invalid state name.Please try again.`)
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
         return
@@ -150,15 +166,16 @@ client.on("message",async(message) => {
 
       const district = await fetchDistricts(result.state_id);
       districtData= district.districts
-      var districtsMessage = "" 
+      var districtsMessage = "```" 
       districtData.map(items=>{
-        districtsMessage+=" |`"+items.district_name+"`|"
+        districtsMessage+="◽"+items.district_name+" "
       })
-      districtsMessage+="\nEnter your district name in format '$district districtname'"
+      districtsMessage+="```"
       const embed = new MessageEmbed()
         .setColor('#DAF7A6')
         .addField(`${arguments}`,`${districtsMessage}`)
-        message.channel.send(`${message.member}`, {
+        .addField("Enter your district name in format ","`$district districtname`")
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed,
          });
       
@@ -168,8 +185,8 @@ client.on("message",async(message) => {
       if(!state_id){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
-        .setFooter(`Enter your state first`)
-        message.channel.send(`${message.member}`, {
+        .setTitle(`Enter your state first`)
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
         return
@@ -180,8 +197,8 @@ client.on("message",async(message) => {
       if(!result){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
-        .setFooter(`Invalid district name`)
-        message.channel.send(`${message.member}`, {
+        .setTitle(`Invalid district name`)
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
         return;
@@ -189,8 +206,8 @@ client.on("message",async(message) => {
       createUser(message.author.tag,"",false,result.district_id)
       const embed = new MessageEmbed()
         .setColor('#DAF7A6')
-        .setFooter(`Enter your age in format '$age your_age'`)
-        message.channel.send(`${message.member}`, {
+        .addField("Enter your age in format" ,"`$age your_age`")
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed,
          })
     }
@@ -200,8 +217,8 @@ client.on("message",async(message) => {
       if(!district_id){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
-        .setFooter(`Enter your district first`)
-        message.channel.send(`${message.member}`, {
+        .setTitle(`Enter your district first`)
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
         //message.reply("Enter your preferred date first")
@@ -217,8 +234,8 @@ client.on("message",async(message) => {
       });
       const embed = new MessageEmbed()
       .setColor('#DAF7A6')
-      .setFooter(`Enter your preferred date in format '$date 09-03-2021'`)
-      message.channel.send(`${message.member}`, {
+      .addField(`Enter your preferred date in format `,"`$date 09-03-2021`")
+      message.channel.send(`<@${message.author.id}>`, {
         embed: embed,
        })
     }
@@ -228,8 +245,8 @@ client.on("message",async(message) => {
       if(!age){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
-        .setFooter(`Enter your age first`)
-        message.channel.send(`${message.member}`, {
+        .setTitle(`Enter your age first`)
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
         //message.reply("Enter your district first")
@@ -252,39 +269,51 @@ client.on("message",async(message) => {
       else{
         slotMessage = "No slot available"
       } 
-      notify_Message = "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date"  
+     // notify_Message = "\nEnter `$notify` for daily update or `$notify dd-mm-yyyy` to get slot availability notifications for a particular date"  
       //message.reply(slotMessage) 
       var fieldTitle = "😕"
       //console.log(slotMessage.length)
       const chunk = (arr, size) => arr.reduce((acc, e, i) => (i % size ? acc[acc.length - 1].push(e) : acc.push([e]), acc), []);
       if(flag){
         fieldTitle=`Available Slots  - 📅${arguments}`
-        var footer_message = "" 
+        //var footer_message = "" 
         var slotMessage1 = chunk(slotMessage.split("\n"),8)
 
         slotMessage1.map((items,i)=>{
           var slotMessage2 ="```"
           slotMessage2+= items.join("\n") +"```"
-          if(slotMessage1.length === i+1){
-            slotMessage2+="\nBook vaccine https://selfregistration.cowin.gov.in/"
-            footer_message =notify_Message
-          }
           if( i ===1){
             fieldTitle="⏬"
           }
+          if(slotMessage1.length === i+1){
+            slotMessage2+="\nBook vaccine https://selfregistration.cowin.gov.in/"
+            const last_embed = new MessageEmbed() 
+          .setColor('#DAF7A6')
+          .addField(`${fieldTitle}`,`${slotMessage2}`)
+          .addField(`For daily update enter`,"`$notify`")
+        .addField("Or to get slot availability notifications for a particular date enter","`$notify dd-mm-yyyy`")
+        .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
+        //console.log((embed))
+           message.channel.send(`<@${user_id}>`,{embed:last_embed});
+           return
+            //footer_message =notify_Message
+          }
+          
           const embed = new MessageEmbed() 
           .setColor('#DAF7A6')
           .addField(`${fieldTitle}`,`${slotMessage2}`)
-          .setFooter(`${footer_message}`)
+          
         //console.log((embed))
            message.channel.send(`<@${user_id}>`,{embed:embed});
-        })
+        });
+        
       }
       else{
         const embed = new MessageEmbed()
         .setColor('#FFC83D')
-        .addField(`${fieldTitle}`,`${slotMessage}`)
-        .setFooter(`${notify_Message}`)
+        .addField(`${fieldTitle}`,"No slot available")
+        .addField(`Enter`,"`$notify`")
+        .addField("for daily update or","`$notify dd-mm-yyyy`\n to get slot availability notifications for a particular date")
         //console.log((embed))
         message.channel.send(`<@${user_id}>`,{embed:embed});
       }
@@ -315,67 +344,18 @@ client.on("message",async(message) => {
       
     }else if(CMD_NAME === "notify"){
       
-      var {district_id,state_id,user_id,age} = await findData(message.author.tag,"user")
+      var {district_id,state_id,user_id,age,channel_id} = await findData(message.author.tag,"user")
       //console.log(district_id,state_id,age,date)
       if(!district_id || !state_id || !age){
-        var alert = "You haven't given all the required details yet. Begin by entering your statename in the format '$state statename' "
+        var alert = "You haven't given all the required details yet. Begin by entering your statename in the format "
         const embed = new MessageEmbed()
         .setColor('#F03A17')
-        .addField("❗❗❗",`${alert}`)
+        .addField(`${alert}`,"`$state statename`")
         //console.log((embed))
         message.channel.send(`<@${message.author.id}>`,{embed:embed});
         //message.reply("")
         return;
       }
-      /*if(!date || date===undefined){
-          if(!age){
-            if(!district_id){
-              if(!state_id){
-                const embed_error = new MessageEmbed()
-                .setColor('#FB2A2A')
-                .setTitle(`Enter state first in the format '$state state_name`) 
-                message.channel.send(`${message.member}`, {
-                  embed: embed_error,
-                })
-                return
-              }
-              else{
-                const embed_error = new MessageEmbed()
-                .setColor('#FB2A2A')
-                .setTitle(`Enter district first in the format '$district district_name'`)
-                message.channel.send(`${message.member}`, {
-                  embed: embed_error,
-                })
-                return
-              }
-            }
-            else{
-              const embed_error = new MessageEmbed()
-              .setColor('#FB2A2A')
-              .setTitle(`Enter date first in the format '$date 09-03-2021'`)
-              message.channel.send(`${message.member}`, {
-                embed: embed_error,
-              })
-              return
-            }
-          }
-          else{
-            const embed_error = new MessageEmbed()
-            .setColor('#FB2A2A')
-            .setTitle(`Enter yor age first in the format '$age your_age'`)
-            message.channel.send(`${message.member}`, {
-              embed: embed_error,
-            })
-           return
-          }
-          console.log("no date")
-        
-      }
-      else{
-        //console.log("date added already")
-        console.log("adding date......")
-        
-      }*/
       
       addData(message.author.tag,true,district_id,age,arguments,!arguments);
         /*User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age},(err,user) => {
@@ -383,14 +363,37 @@ client.on("message",async(message) => {
             console.log("Error notify")
           }
         });*/
-        check = await findData(message.author.tag,"notify")
+        //check = await findData(message.author.tag,"notify")
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
         .setTitle(`We'll check for slots every hour and notify you if available :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
-        message.channel.send(`${message.member}`, {
+        message.channel.send(`<@${message.author.id}>`, {
           embed: embed,
-         })
-      
+        })
+      message.author.send("Heyy :wave: , I'll be notifying you here on vaccine slot updates.").catch(async() => {
+        if(!channel_id){
+          let newChannel = await message.guild.channels.create(`Vaccine slots for @${message.author.tag}`,{
+            reason: 'Unable to DM this user',
+            type: 'text',
+            permissionOverwrites: [
+              {
+                id: message.guild.id,
+                deny: ['VIEW_CHANNEL','SEND_MESSAGES'],
+              },
+              {
+                id: message.author.id,
+                allow: ['VIEW_CHANNEL','SEND_MESSAGES'],
+              }
+            ]
+          })
+          await newChannel.send("Heyy :wave: , I'll be notifying you here.")
+          let {id} = newChannel;
+  
+          await User.findOneAndUpdate({tag: message.author.tag},{channel_id: id},(err,user) => {
+            if(err){ console.log("Error adding created channel id to DB")}
+          })
+        }  
+      })
     }else if(CMD_NAME === "unsubscribe"){
       User.findOneAndUpdate({tag: message.author.tag},{notify:false,daily_notify: false},(err,user) => {
         if(err){
@@ -402,7 +405,7 @@ client.on("message",async(message) => {
       const embed = new MessageEmbed()
       .setColor('#DAF7A6')
       .setTitle(`Unsubscribed :thumbsup:`)
-      message.channel.send(`${message.member}`, {
+      message.channel.send(`<@${message.author.id}>`, {
         embed: embed,
        })
       //message.reply("Unsubscribed :thumbsup:")
@@ -410,6 +413,7 @@ client.on("message",async(message) => {
       message.reply("Invalid command.")
     }
   }
+
 })
 
 client.login(process.env.DISCORD_BOT_TOKEN);

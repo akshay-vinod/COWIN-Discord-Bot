@@ -17,6 +17,10 @@ var userSchema = new mongoose.Schema(
     notify_date: String,
     notify_age: Number,
     user_id: String,
+    channel_id: {
+      type: String,
+      default: null
+    },
   },
   { timestamps: true }
 );

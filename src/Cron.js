@@ -17,23 +17,24 @@ const chunk = (arr, size) =>
     []
   );
 //for cron job
-const embedMessage = (slotMessage, user_id, date) => {
+const embedMessage = (slotMessage, user_id, date,channel_id) => {
   var fieldTitle = `Available Slot  - 📅${date}`;
-  var notify_Message =
-    "\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date";
+  //var notify_Message ="\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date";
   var footer_message = "";
   var slotMessage1 = chunk(slotMessage.split("\n"), 10);
   //console.log(slotMessage1);
   slotMessage1.map(async(items, i) => {
     var slotMessage2 = "```";
     slotMessage2 += items.join("\n") + "```";
-    if (slotMessage1.length === i + 1) {
-      slotMessage2 += "\nBook vaccine https://selfregistration.cowin.gov.in/";
-      footer_message = notify_Message;
-    }
     if (i === 1) {
       fieldTitle = "⏬";
     }
+    if (slotMessage1.length === i + 1) {
+      slotMessage2 += "\nBook vaccine https://selfregistration.cowin.gov.in/";
+      footer_message = "Enter $unsubscribe anytime to stop updates";
+      
+    }
+    
     const embed = new MessageEmbed()
       .setColor("#DAF7A6")
       .addField(`${fieldTitle}`, `${slotMessage2}`)
@@ -45,7 +46,11 @@ const embedMessage = (slotMessage, user_id, date) => {
     var userid = await (client.users.cache.get(user_id))
     if (!client.users.cache.get(user_id))
       console.log("can't find user in cache");
-    userid.send(embed)
+    userid.send(embed).catch(async() => {
+      console.log("Cant DM to user")
+      var userChannel = await client.channels.cache.find(channel => channel_id==channel.id)
+      userChannel.send(embed).catch(()=>console.log("Can't send DM or channel msg to user"))
+    })
   });
 }
 
@@ -58,7 +63,7 @@ const groupBy = (keys) => (array) =>
   }, {});
 
 var hourlyTask = cron.schedule(
-  "00 59 * * * *", // "*/50 * * * * *"
+  "0 5 * * * *", // "*/50 * * * * *"
   async () => {
     console.log("cron running");
     //date = await findData("Akshay Vinod#1878","date")
@@ -73,7 +78,7 @@ var hourlyTask = cron.schedule(
       return;
     }
 
-    groupedUsers = await groupBy(["district_id", "notify_date"])(users);
+    groupedUsers = await groupBy(["notify_district_id", "notify_date"])(users);
 
     Object.entries(groupedUsers).forEach((entry) => {
       const [key, values] = entry;
@@ -110,7 +115,7 @@ var hourlyTask = cron.schedule(
         (item) => item.min_age_limit <= 60 && item.available_capacity != 0
       );
       values.forEach((value) => {
-        if (value.age >= 60) {
+        if (value.notify_age >= 60) {
           var slotMessage = "";
           if (elderlySlots.length) {
             elderlySlots.map((items) => {
@@ -118,11 +123,11 @@ var hourlyTask = cron.schedule(
           if(items.fee !="0") fee = `paid(Rs.${item.fee})`
           slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            embedMessage(slotMessage, value.user_id, date);
+            embedMessage(slotMessage, value.user_id, date,value.channel_id);
             //console.log(elderlySlots);
           }
 
-        } else if (value.age >= 45) {
+        } else if (value.notify_age >= 45) {
           slotMessage = "";
           if (middleSlots.length) {
             middleSlots.map((items) => {
@@ -130,10 +135,10 @@ var hourlyTask = cron.schedule(
           if(items.fee !="0") fee = `paid(Rs.${item.fee})`
           slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            embedMessage(slotMessage, value.user_id, date);
+            embedMessage(slotMessage, value.user_id, date,value.channel_id);
             //console.log(middleSlots);
           }
-        } else if (value.age >= 18) {
+        } else if (value.notify_age >= 18) {
           slotMessage = "";
           if (youthSlots.length) {
             youthSlots.map((items) => {
@@ -141,7 +146,7 @@ var hourlyTask = cron.schedule(
           if(items.fee !="0") fee = `paid(Rs.${item.fee})`
           slotMessage +=" 🔸" +items.name +" ▶ " +items.vaccine +" ▶ "+fee+" ▶"+" Slots Available->" +items.available_capacity +"\n";
             });
-            embedMessage(slotMessage, value.user_id, date);
+            embedMessage(slotMessage, value.user_id, date,value.channel_id);
             //console.log(youngSlots);
           }
         }
