@@ -24,10 +24,10 @@ BFH/recQKRh3Wwz7nWhl4/2021
 1. Clone the Repo
 2. Run `npm install`
 3. Create your bot [here](https://discord.com/developers/applications) and copy bot token
-4. Copy database connection strig
+4. Copy database connection string
 5. Create a .env file and place your bot token and database connection string like this
-    `DISCORD_BOT_TOKEN=XXXXXXXXXXX
-     DATABASE=xxxxxxxx`
+    `DISCORD_BOT_TOKEN=XXXXXXXXXXX`
+    `DATABASE=xxxxxxxx`
 
 ## How to Run
 `npm run dev`
