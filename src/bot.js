@@ -139,7 +139,7 @@ client.on("message",async(message) => {
         //message.author.send("Your message here.")
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
-        .setTitle("VaccienKaro")
+        .setTitle("VaccineKaro")
         .setDescription("Hey there!:wave: I am VaccineKaro, I will check Covid vaccination slots availability in your area and alert you when a slot becomes available.")
         .addField("To get started by entering","`$state statename`")
         .setThumbnail("https://i.ibb.co/Wxsn61G/logo.png")
