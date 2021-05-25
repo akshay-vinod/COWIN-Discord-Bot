@@ -20,25 +20,23 @@ const chunk = (arr, size) =>
 const embedMessage = (slotMessage, user_id, date,channel_id) => {
   var fieldTitle = `Available Slot  - 📅${date}`;
   //var notify_Message ="\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date";
-  var footer_message = "";
+  //var footer_message = "";
   var slotMessage1 = chunk(slotMessage.split("\n"), 10);
   //console.log(slotMessage1);
   slotMessage1.map(async(items, i) => {
     var slotMessage2 = "```";
     slotMessage2 += items.join("\n") + "```";
+    var embed = new MessageEmbed()
     if (i === 1) {
       fieldTitle = "⏬";
     }
+    embed.setColor("#DAF7A6")
+    .addField(`${fieldTitle}`, `${slotMessage2}`)
     if (slotMessage1.length === i + 1) {
       slotMessage2 += "\nBook vaccine https://selfregistration.cowin.gov.in/";
-      footer_message = "Enter $unsubscribe anytime to stop updates";
-      
+      embed.addField("To stop update anytime enter" ,"`$unsubscribe`")
+      .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
     }
-    
-    const embed = new MessageEmbed()
-      .setColor("#DAF7A6")
-      .addField(`${fieldTitle}`, `${slotMessage2}`)
-      .setFooter(`${footer_message}`);
 
     //console.log((embed))
     //message.channel.send(`<@${user_id}>`,{embed:embed});
@@ -63,7 +61,7 @@ const groupBy = (keys) => (array) =>
   }, {});
 
 var hourlyTask = cron.schedule(
-  "0 5 * * * *", // "*/50 * * * * *"
+  "0 5 * * * *", //  "*/20 * * * * *"
   async () => {
     console.log("cron running");
     //date = await findData("Akshay Vinod#1878","date")

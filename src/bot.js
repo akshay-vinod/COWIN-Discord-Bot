@@ -54,7 +54,7 @@ client.on("ready", () => {
 
   hourlyTask.start()
   dailyTask.start()
-  welcome(client)
+  welcome(client,MessageEmbed)
 });
 
 const createUser = (tag,user_id, state_id, districtid) => {
@@ -141,7 +141,8 @@ client.on("message",async(message) => {
         .setColor('#DAF7A6')
         .setTitle("VaccineKaro")
         .setDescription("Hey there!:wave: I am VaccineKaro, I will check Covid vaccination slots availability in your area and alert you when a slot becomes available.")
-        .addField("To get started by entering","`$state statename`")
+        .addField("You can either dm me or put your query on the channel","[add me to your channel](https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot)")
+        .addField("To get started,Enter","`$state statename`")
         .setThumbnail("https://i.ibb.co/Wxsn61G/logo.png")
         .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
         message.channel.send(`<@${message.author.id}>`, {
@@ -312,8 +313,8 @@ client.on("message",async(message) => {
         const embed = new MessageEmbed()
         .setColor('#FFC83D')
         .addField(`${fieldTitle}`,"No slot available")
-        .addField(`Enter`,"`$notify`")
-        .addField("for daily update or","`$notify dd-mm-yyyy`\n to get slot availability notifications for a particular date")
+        .addField(`For daily update enter`,"`$notify`")
+      .addField("Or to get slot availability notifications for a particular date enter","`$notify dd-mm-yyyy`")
         //console.log((embed))
         message.channel.send(`<@${user_id}>`,{embed:embed});
       }
@@ -370,25 +371,34 @@ client.on("message",async(message) => {
         message.channel.send(`<@${message.author.id}>`, {
           embed: embed,
         })
-      message.author.send("Heyy :wave: , I'll be notifying you here on vaccine slot updates.").catch(async() => {
+      message.author.send("Watch out for my notifications here :eyes:").catch(async() => {
         if(!channel_id){
+          const everyoneRole = message.guild.roles.everyone;
+          console.log(message.guild.roles)
           let newChannel = await message.guild.channels.create(`Vaccine slots for @${message.author.tag}`,{
             reason: 'Unable to DM this user',
             type: 'text',
             permissionOverwrites: [
               {
-                id: message.guild.id,
-                deny: ['VIEW_CHANNEL','SEND_MESSAGES'],
-              },
-              {
+                type: 'member',
                 id: message.author.id,
                 allow: ['VIEW_CHANNEL','SEND_MESSAGES'],
-              }
+              },
+              {
+                type: 'member',
+                id: client.user.id,
+                allow: ['VIEW_CHANNEL','SEND_MESSAGES']
+              },
+              {
+                type: 'role',
+                id: everyoneRole.id,
+                deny: ['VIEW_CHANNEL','SEND_MESSAGES'],
+              },
             ]
           })
           await newChannel.send("Heyy :wave: , I'll be notifying you here.")
           let {id} = newChannel;
-  
+          
           await User.findOneAndUpdate({tag: message.author.tag},{channel_id: id},(err,user) => {
             if(err){ console.log("Error adding created channel id to DB")}
           })
