@@ -11,14 +11,23 @@ BFH/recQKRh3Wwz7nWhl4/2021
 [link to video]
 ## How it Works ?
 1. Add bot to your server  [https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot]
-2. Start the bot by typing the command ### `$start`
+2. Start the bot by typing the command  `$start`
 ## Libraries used
-"axios": "^0.21.1",
-"dayjs": "^1.10.4",
-"discord.js": "^12.5.3",
-"dotenv": "^9.0.2",
-"mongoose": "^5.12.10",
-"node-cron": "^3.0.0"
+1. axios: "^0.21.1"
+2. dayjs: "^1.10.4"
+3. discord.js: "^12.5.3"
+4. dotenv: "^9.0.2"
+5. mongoose: "^5.12.10"
+6. node-cron: "^3.0.0"
+
 ## How to configure
+1. Clone the Repo
+2. Run `npm install`
+3. Create your bot [here](https://discord.com/developers/applications) and copy bot token
+4. Copy database connection strig
+5. Create a .env file and place your bot token and database connection string like this
+    `DISCORD_BOT_TOKEN=XXXXXXXXXXX
+     DATABASE=xxxxxxxx`
 
 ## How to Run
+`npm run dev`
