@@ -29,9 +29,8 @@ BFH/recQKRh3Wwz7nWhl4/2021
 4. Copy database connection string
 5. Create a .env file and place your bot token and database connection string like this
 
-    `DISCORD_BOT_TOKEN=XXXXXXXXXXX
-    
-     DATABASE=xxxxxxxx`
+    `DISCORD_BOT_TOKEN=XXXXXXXXXX`<br />
+     `DATABASE=xxxxxxxx`
 
 ## How to Run
 `npm run dev`
