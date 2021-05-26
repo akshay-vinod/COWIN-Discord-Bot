@@ -25,7 +25,12 @@ BFH/recQKRh3Wwz7nWhl4/2021
 | Library | Version |
 |---------|---------|
 | axios   | ^0.21.1 |
-|dayjs|1.10.4|
+| dayjs | ^1.10.4 |
+| discord.js | ^12.5.3 |
+| dotenv | ^9.0.2 |
+|mongoose| ^5.12.10 |
+| node-cron | ^3.0.0 | 
+
 
 ## How to configure
 1. Clone the Repo
