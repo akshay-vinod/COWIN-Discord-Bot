@@ -15,12 +15,6 @@ BFH/recQKRh3Wwz7nWhl4/2021
 1. Add the bot to your server  [https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot]
 2. Start the bot by typing the command  `$start`
 ## Libraries used
-1. axios: "^0.21.1"
-2. dayjs: "^1.10.4"
-3. discord.js: "^12.5.3"
-4. dotenv: "^9.0.2"
-5. mongoose: "^5.12.10"
-6. node-cron: "^3.0.0"
 
 | Library | Version |
 |---------|---------|
