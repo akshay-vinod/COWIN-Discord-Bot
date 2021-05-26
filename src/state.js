@@ -9,7 +9,6 @@ const headers = {
 const fetchState = async () => {
   const url = "https://cdn-api.co-vin.in/api/v2/admin/location/states";
   let result = await axios.get(url,{headers});
-  //console.log(result.data.data);
   return result.data;
 };
 const fetchDistricts = async (state_id) => {

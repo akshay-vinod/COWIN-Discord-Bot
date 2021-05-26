@@ -27,14 +27,7 @@ mongoose.connect(process.env.DATABASE,{
 
 mongoose.connection.on('error', err => console.log(err));
 
-/*function search(nameKey, myArray){
-    for (var i=0; i < myArray.length; i++) {
-        if ((myArray[i].state_name ).toUpperCase()=== (nameKey).toUpperCase()) {
-            return myArray[i].state_id;
-        }
-    }
-}*/
-//var resultObject = search("string 1", array);
+
 
 client.on("ready", () => {
  // const state = await fetchState();
@@ -135,13 +128,11 @@ client.on("message",async(message) => {
        /* stateData.map(items=>{
             message.channel.send(items.state_name)
         })*/
-        //console.log(client.users)
-        //message.author.send("Your message here.")
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
         .setTitle("VaccineKaro")
-        .setDescription("Hey there!:wave: I am VaccineKaro, I will check Covid vaccination slots availability in your area and alert you when a slot becomes available.")
-        .addField("You can either dm me or put your query on the channel","[add me to your channel](https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot)")
+        .setDescription("Hey there!:wave: I am VaccineKaro, I can check Covid vaccination slot availability in your area and alert you when a slot becomes available.")
+        .addField("You can either DM me or put your query in the channel","[Add me to your server](https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot)")
         .addField("To get started,Enter","`$state statename`")
         .setThumbnail("https://i.ibb.co/Wxsn61G/logo.png")
         .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
@@ -151,7 +142,6 @@ client.on("message",async(message) => {
       
     }
     else if(CMD_NAME === "state"){
-      //resultObject = search(arguments, stateData);
       result = stateData.find(({state_name}) => state_name.toUpperCase() === arguments.toUpperCase());
       
       if(!result){
@@ -214,7 +204,6 @@ client.on("message",async(message) => {
     }
     else if(CMD_NAME === "age") {
       district_id = await findData(message.author.tag,"district")
-      //console.log(arguments)
       if(!district_id){
         const embed_error = new MessageEmbed()
         .setColor('#FB2A2A')
@@ -222,7 +211,6 @@ client.on("message",async(message) => {
         message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
-        //message.reply("Enter your preferred date first")
         return
       }
       User.findOneAndUpdate({tag: message.author.tag},{age: arguments},{new: true},(err,user) => {
@@ -250,7 +238,6 @@ client.on("message",async(message) => {
         message.channel.send(`<@${message.author.id}>`, {
           embed: embed_error,
          })
-        //message.reply("Enter your district first")
         return
       }
       const slot = await fetchSlots(district_id,arguments);
@@ -270,10 +257,7 @@ client.on("message",async(message) => {
       else{
         slotMessage = "No slot available"
       } 
-     // notify_Message = "\nEnter `$notify` for daily update or `$notify dd-mm-yyyy` to get slot availability notifications for a particular date"  
-      //message.reply(slotMessage) 
       var fieldTitle = "😕"
-      //console.log(slotMessage.length)
       const chunk = (arr, size) => arr.reduce((acc, e, i) => (i % size ? acc[acc.length - 1].push(e) : acc.push([e]), acc), []);
       if(flag){
         fieldTitle=`Available Slots  - 📅${arguments}`
@@ -346,7 +330,6 @@ client.on("message",async(message) => {
     }else if(CMD_NAME === "notify"){
       
       var {district_id,state_id,user_id,age,channel_id} = await findData(message.author.tag,"user")
-      //console.log(district_id,state_id,age,date)
       if(!district_id || !state_id || !age){
         var alert = "You haven't given all the required details yet. Begin by entering your statename in the format "
         const embed = new MessageEmbed()
@@ -359,22 +342,16 @@ client.on("message",async(message) => {
       }
       
       addData(message.author.tag,true,district_id,age,arguments,!arguments);
-        /*User.findOneAndUpdate({tag: message.author.tag},{notify: true,notify_district_id:district_id,notify_age:age},(err,user) => {
-          if(err){
-            console.log("Error notify")
-          }
-        });*/
-        //check = await findData(message.author.tag,"notify")
+        
         const embed = new MessageEmbed()
         .setColor('#DAF7A6')
         .setTitle(`We'll check for slots every hour and notify you if available :raised_hands: \nEnter $unsubscribe anytime to stop updates`)
         message.channel.send(`<@${message.author.id}>`, {
           embed: embed,
         })
-      message.author.send("Watch out for my notifications here :eyes:").catch(async() => {
+      message.author.send("Watch out :eyes: for my notifications :bell: here ").catch(async() => {
         if(!channel_id){
           const everyoneRole = message.guild.roles.everyone;
-          console.log(message.guild.roles)
           let newChannel = await message.guild.channels.create(`Vaccine slots for @${message.author.tag}`,{
             reason: 'Unable to DM this user',
             type: 'text',
@@ -396,7 +373,7 @@ client.on("message",async(message) => {
               },
             ]
           })
-          await newChannel.send("Heyy :wave: , I'll be notifying you here.")
+          newChannel.send("Heyy :wave: , I'll be notifying you here :bell:").catch(() => console.log("Couldn't send msg in new channel to"))
           let {id} = newChannel;
           
           await User.findOneAndUpdate({tag: message.author.tag},{channel_id: id},(err,user) => {
@@ -418,7 +395,6 @@ client.on("message",async(message) => {
       message.channel.send(`<@${message.author.id}>`, {
         embed: embed,
        })
-      //message.reply("Unsubscribed :thumbsup:")
     }else{
       message.reply("Invalid command.")
     }

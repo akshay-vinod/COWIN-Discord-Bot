@@ -19,8 +19,6 @@ const chunk = (arr, size) =>
 //for cron job
 const embedMessage = (slotMessage, user_id, date,channel_id) => {
   var fieldTitle = `Available Slot  - 📅${date}`;
-  //var notify_Message ="\nEnter '$notify' for daily update or '$notify dd-mm-yyyy' to get slot availability notifications for a particular date";
-  //var footer_message = "";
   var slotMessage1 = chunk(slotMessage.split("\n"), 10);
   //console.log(slotMessage1);
   slotMessage1.map(async(items, i) => {
@@ -38,9 +36,6 @@ const embedMessage = (slotMessage, user_id, date,channel_id) => {
       .setFooter("Get Vaccinated.", "https://i.ibb.co/Wxsn61G/logo.png")
     }
 
-    //console.log((embed))
-    //message.channel.send(`<@${user_id}>`,{embed:embed});
-    //console.log("userid", user_id);
     var userid = await (client.users.cache.get(user_id))
     if (!client.users.cache.get(user_id))
       console.log("can't find user in cache");
@@ -64,11 +59,6 @@ var hourlyTask = cron.schedule(
   "0 5 * * * *", //  "*/20 * * * * *"
   async () => {
     console.log("cron running");
-    //date = await findData("Akshay Vinod#1878","date")
-    //console.log(date)
-    //console.log()
-    //client.users.cache.get('775921390687354920').send('hai')
-    //users = await findUsers()
 
     users = await User.find({ notify: true }).exec();
 
