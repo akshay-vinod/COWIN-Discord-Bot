@@ -1,7 +1,7 @@
 ![BFH Banner](https://trello-attachments.s3.amazonaws.com/542e9c6316504d5797afbfb9/542e9c6316504d5797afbfc1/39dee8d993841943b5723510ce663233/Frame_19.png)
 # VaccineKaro
-A Discord bot that asks the user for their location (state name and district name), age and preferred date and shows the vaccine slots available for that particular date.It also checks for slot availability each hour and can notify the user when a slot is available. The bot can be used both in DM and in server. The user has to have at least one common server with the bot. For this, users can either add the bot to their server or join the VaccineKaro server, exclusively for this purpose.
-For users that don't allow direct messages from other server members, the bot will create a private channel in the common server and send the notifications there. Thus if you are adding the bot to your server, the bot must be given permissions to create channels in the server.
+A Discord bot that asks the user for their location (state name and district name), age and preferred date and shows the vaccine slots available for that particular date.It also checks for slot availability each hour and can notify the user when a slot is available. The bot can be used both in DM and in server.
+    The user has to have at least one common server with the bot. For this, users can either [add the bot to their server](https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot) or [join our VaccineKaro server](https://discord.gg/5Je5YvkZzy), which has been created exclusively for this purpose. For users with settings that don't allow direct messages from other server members, the bot will create a private channel in the common server and send the notifications there. Thus if you are adding the bot to your server, the bot must be given permissions to create channels in the server.
 
 ## Team members
 1. Navaneeth Manoj [https://github.com/navaneethmanoj]
@@ -14,7 +14,7 @@ BFH/recQKRh3Wwz7nWhl4/2021
 
 >[Click here to watch](https://www.loom.com/share/ec162a48f08144bb9257a4c2e65657d8)
 ## How it Works ?
-1. Add the bot to your server  [https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot]
+1. [Add the bot to your server](https://discord.com/oauth2/authorize?client_id=843357961086435339&scope=bot) or [join the VaccineKaro Server](https://discord.gg/5Je5YvkZzy)
 2. Start the bot by typing the command  `$start`
 ## Libraries used
 
